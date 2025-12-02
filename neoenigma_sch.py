@@ -19,10 +19,13 @@ class CryptionMain:
     def encryption(self) -> str:
         compressed_text : str = StringProcessor(self.text).compress()
         salt : str = get_random_hex(self.add_info_length)
-        mac : str = self.generate_mac(compressed_text, salt)
 
-        enigma = EnigmaMachine(compressed_text,self.key,salt)
+        secret_key : bytes = self.generate_hash_secret(salt)
+
+        enigma = EnigmaMachine(compressed_text, secret_key)
         encrypted_text : str = enigma.encrypte()
+
+        mac : str = self.generate_mac(encrypted_text, salt, secret_key)
 
         return salt + encrypted_text + mac
 
@@ -33,24 +36,37 @@ class CryptionMain:
             salt = self.text[:self.add_info_length*2]
             encrypted_text : str = self.text[self.add_info_length*2:-self.add_info_length*2]
 
-            enigma = EnigmaMachine(encrypted_text,self.key,salt)
+            secret_key : bytes = self.generate_hash_secret(salt)
+            check_mac : str = self.generate_mac(encrypted_text, salt, secret_key)
+
+            if not hmac.compare_digest(check_mac,mac):
+                return False,''
+
+            enigma = EnigmaMachine(encrypted_text, secret_key)
             decrypted_text : str = enigma.encrypte()
 
-            check_mac : str = self.generate_mac(decrypted_text, salt)
-            if hmac.compare_digest(check_mac,mac):
-                return True, StringProcessor(decrypted_text).decompress()
-            else:
-                return False,''
+            return True, StringProcessor(decrypted_text).decompress()
         except:
             return False, ''
 
-    def generate_mac(self, text : str, salt : str) -> str: # 生成mac认证
+    def generate_mac(self, text : str, salt : str, key : bytes) -> str: # 生成mac认证
         hmac_result : bytes = hmac.new(
-            key=self.key.encode('utf-8') + bytes.fromhex(salt),
-            msg=text.encode('utf-8'),
+            key=key,
+            msg=(salt + text).encode('utf-8'),
             digestmod=hashlib.sha3_512
         ).digest()
         return hashlib.shake_256(hmac_result).hexdigest(self.add_info_length) # 使用shake256生成指定长度
+
+    def generate_hash_secret(self, salt : str) -> bytes:
+        return hash_secret_raw( # 通过随机盐与密钥生成参数
+            secret=self.key.encode('utf-8'),
+            salt=bytes.fromhex(salt),
+            time_cost=4,
+            memory_cost=256*1024, # KB
+            parallelism=4,
+            hash_len=64, # bytes
+            type=Type.ID
+        )
 
 class StringProcessor:
     def __init__(self, string : str) -> None:
@@ -91,21 +107,21 @@ class StringProcessor:
     
     def shuffle(self, seed : str) -> str: # seed应为16进制值
         chars : list[str] = list(self.string)
-        derived_seed : str = hashlib.shake_256(bytes.fromhex(seed)).hexdigest(2 * len(self.string)) # 生成所需的bytes派生长度
+        derived_seed : str = hashlib.shake_256(bytes.fromhex(seed)).hexdigest(2 * (len(chars)-1)) # 生成所需的bytes派生长度
         random_hex_numbers : list[str] = StringProcessor(derived_seed).cut_to_list(4)
         for i in range(len(chars) - 1, 0, -1): # 使用伪随机数进行打乱，使用Fisher-Yates算法
-            l = int(random_hex_numbers[i],16) % (i + 1)
+            l = int(random_hex_numbers[i-1],16) % (i + 1)
             chars[i], chars[l] = chars[l], chars[i]
         return ''.join(chars)
 
 class EnigmaMachine:
-    def __init__(self, text : str, key : str, salt : str) -> None:
+    def __init__(self, text : str, key : bytes) -> None:
         self.text : str = text
-        unrest_alphabet_seed : str = hashlib.sha3_512((key + salt).encode('utf-8')).hexdigest()
+        unrest_alphabet_seed : str = hashlib.sha3_256(key).hexdigest()
         self.alphabet : str = StringProcessor(HEX_CHARS).shuffle(unrest_alphabet_seed) # 十六进制的所有排序组合为16!
         self.alphabet_len = len(self.alphabet)
 
-        parameter_generator = EnigmaParametersGenerator(key,salt,self.alphabet)
+        parameter_generator = EnigmaParametersGenerator(key,self.alphabet)
         self.rotors : list[str] = parameter_generator.generate_rotors()
         self.deflects : list[int] = parameter_generator.generate_deflects()
         self.turn_extent : int = parameter_generator.generate_turn_extent()
@@ -154,16 +170,8 @@ class EnigmaMachine:
         return letter
 
 class EnigmaParametersGenerator:
-    def __init__(self, key : str, salt : str, alphabet : str) -> None:
-        self.init_parameter : str = hash_secret_raw( # 通过随机盐与密钥生成参数
-            secret=key.encode('utf-8'),
-            salt=bytes.fromhex(salt),
-            time_cost=4,
-            memory_cost=256*1024, # KB
-            parallelism=4,
-            hash_len=64, # bytes
-            type=Type.ID
-        ).hex()
+    def __init__(self, key : bytes, alphabet : str) -> None:
+        self.init_parameter : str = hashlib.sha3_512(key).hexdigest() # 派生一个128个字符长度的十六值
         self.alphabet : str = alphabet
         self.shuffle_value_places : int = 12 # 可以覆盖16!的十六进制长度
         self.rotors_num : int = 9
