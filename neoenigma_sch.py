@@ -226,7 +226,7 @@ class UIManager:
         self.ui_setup()
 
     def ui_setup(self) -> None:
-        self.root.title("Enigma++")
+        self.root.title("NeoEnigma")
         self.root.geometry("800x640")
         self.root.resizable(False,False)
         self.root.option_add("*Font", ("Noto Sans Mono",14))
