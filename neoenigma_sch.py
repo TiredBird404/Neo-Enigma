@@ -89,7 +89,7 @@ class StringProcessor:
                 result += '\n'
         return result
     
-    def unrest(self, seed : str) -> str: # seed应为16进制值
+    def shuffle(self, seed : str) -> str: # seed应为16进制值
         chars : list[str] = list(self.string)
         random_hex_numbers : list[str] = self.derive_seed(bytes.fromhex(seed))
         for f in range(len(chars) - 1, 0, -1): # 使用伪随机数进行打乱，使用Fisher-Yates算法
@@ -99,22 +99,15 @@ class StringProcessor:
 
     def derive_seed(self, seed : bytes) -> list[str]:
         string_len : int = len(self.string)
-
-        place_needed : int = len(hex(string_len)[2:])
-        derive_len : int = place_needed * string_len
-        if derive_len % 2 == 1: # digest的长度是bytes的长度，bytes的长度是十六进制值的一半
-            derive_len += 1 # 为避免所需的长度是奇数，便会将奇数的所需长度+1转为偶数，让其能正确生成bytes值
-        
-        derived_seed : str = hashlib.shake_256(seed).hexdigest(derive_len//2) # 生成所需的派生长度
-        
-        random_hex_numbers : list[str] = StringProcessor(derived_seed).cut_to_list(place_needed)
+        derived_seed : str = hashlib.shake_256(seed).hexdigest(2 * string_len) # 生成所需的派生长度
+        random_hex_numbers : list[str] = StringProcessor(derived_seed).cut_to_list(4)
         return random_hex_numbers
 
 class EnigmaMachine:
     def __init__(self, text : str, key : str, salt : str) -> None:
         self.text : str = text
         unrest_alphabet_seed : str = hashlib.sha3_512((key + salt).encode('utf-8')).hexdigest()
-        self.alphabet : str = StringProcessor(HEX_CHARS).unrest(unrest_alphabet_seed) # 十六进制的所有排序组合为16!
+        self.alphabet : str = StringProcessor(HEX_CHARS).shuffle(unrest_alphabet_seed) # 十六进制的所有排序组合为16!
         self.alphabet_len = len(self.alphabet)
 
         parameter_generator = EnigmaParametersGenerator(key,salt,self.alphabet)
@@ -188,7 +181,7 @@ class EnigmaParametersGenerator:
     def generate_deflects(self) -> list[int]: # 设定每个轮子的初始状态
         # 使用shake派生（或者压缩）整个初始值，并通过这个派生设定每个轮子的初始位置
         derived_parameter : str = hashlib.shake_256(bytes.fromhex(self.init_parameter)).hexdigest(self.rotors_num*2)
-        random_hex_numbers : list[str] = StringProcessor(derived_parameter).cut_to_list(2)
+        random_hex_numbers : list[str] = StringProcessor(derived_parameter).cut_to_list(4)
         random_numbers : list[int] = []
         for n in random_hex_numbers:
             random_numbers.append(int(n,16)%len(self.alphabet))
@@ -200,12 +193,12 @@ class EnigmaParametersGenerator:
         list_parameters : list[str] = StringProcessor(rotors_parameter).cut_to_list(self.shuffle_value_places)
         rotors : list[str] = []
         for p in list_parameters:
-            rotors.append(StringProcessor(self.alphabet).unrest(p))
+            rotors.append(StringProcessor(self.alphabet).shuffle(p))
         return rotors
     
     def generate_chars_convertion(self) -> list[str]:
         parameter : str = self.init_parameter[-self.shuffle_value_places:]
-        unrested_alphabet : str = StringProcessor(self.alphabet).unrest(parameter)
+        unrested_alphabet : str = StringProcessor(self.alphabet).shuffle(parameter)
         return StringProcessor(unrested_alphabet).cut_to_list(2)
 
 class UIManager:
