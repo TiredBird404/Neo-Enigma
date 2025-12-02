@@ -46,7 +46,7 @@ class CryptionMain:
 
     def generate_mac(self, text : str, salt : str) -> str: # 生成mac认证
         hmac_result : bytes = hmac.new(
-            key=(self.key + salt).encode('utf-8'),
+            key=self.key.encode('utf-8') + bytes.fromhex(salt),
             msg=text.encode('utf-8'),
             digestmod=hashlib.sha3_512
         ).digest()
