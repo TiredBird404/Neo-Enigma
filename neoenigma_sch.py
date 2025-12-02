@@ -14,7 +14,7 @@ class CryptionMain:
     def __init__(self, text : str, key : str) -> None:
         self.key : str = StringProcessor(key).clean_space()
         self.text : str = text
-        self.add_info_length : int = 32 # 随机盐、mac的字节大小
+        self.add_info_length : int = 16 # 随机盐、mac的字节大小
     
     def encryption(self) -> str:
         compressed_text : str = StringProcessor(self.text).compress()
