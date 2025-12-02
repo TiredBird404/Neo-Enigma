@@ -24,18 +24,14 @@ class CryptionMain:
         enigma = EnigmaMachine(compressed_text,self.key,salt)
         encrypted_text : str = enigma.encrypte()
 
-        hash_key : str = hashlib.sha3_512(self.key.encode('utf-8')).hexdigest()
-        unrested_text : str = StringProcessor(salt + encrypted_text + mac).unrest(hash_key)
-        return unrested_text
+        return salt + encrypted_text + mac
 
     def decryption(self) -> tuple[bool,str]:
-        self.text = StringProcessor(self.text).hex_only()
         try:
-            hash_key : str = hashlib.sha3_512(self.key.encode('utf-8')).hexdigest()
-            rested_text : str = StringProcessor(self.text).rest(hash_key)
-            mac = rested_text[-self.add_info_length*2:]
-            salt = rested_text[:self.add_info_length*2]
-            encrypted_text : str = rested_text[self.add_info_length*2:-self.add_info_length*2]
+            self.text = StringProcessor(self.text).hex_only()
+            mac = self.text[-self.add_info_length*2:]
+            salt = self.text[:self.add_info_length*2]
+            encrypted_text : str = self.text[self.add_info_length*2:-self.add_info_length*2]
 
             enigma = EnigmaMachine(encrypted_text,self.key,salt)
             decrypted_text : str = enigma.encrypte()
@@ -101,14 +97,6 @@ class StringProcessor:
             chars[f], chars[y] = chars[y], chars[f]
         return ''.join(chars)
 
-    def rest(self, seed : str) -> str:
-        chars : list[str] = list(self.string)
-        random_hex_numbers : list[str] = self.derive_seed(bytes.fromhex(seed))
-        for f in range(1, len(chars)): # 使用伪随机数，进行逆向Fisher-Yates
-            y = int(random_hex_numbers[f],16) % (f + 1)
-            chars[f], chars[y] = chars[y], chars[f]
-        return ''.join(chars)
-
     def derive_seed(self, seed : bytes) -> list[str]:
         string_len : int = len(self.string)
 
@@ -117,7 +105,7 @@ class StringProcessor:
         if derive_len % 2 == 1: # digest的长度是bytes的长度，bytes的长度是十六进制值的一半
             derive_len += 1 # 为避免所需的长度是奇数，便会将奇数的所需长度+1转为偶数，让其能正确生成bytes值
         
-        derived_seed : str = hashlib.shake_128(seed).hexdigest(derive_len//2) # 生成所需的派生长度
+        derived_seed : str = hashlib.shake_256(seed).hexdigest(derive_len//2) # 生成所需的派生长度
         
         random_hex_numbers : list[str] = StringProcessor(derived_seed).cut_to_list(place_needed)
         return random_hex_numbers
@@ -125,7 +113,7 @@ class StringProcessor:
 class EnigmaMachine:
     def __init__(self, text : str, key : str, salt : str) -> None:
         self.text : str = text
-        unrest_alphabet_seed : str = hashlib.sha3_256((key + salt).encode('utf-8')).hexdigest()
+        unrest_alphabet_seed : str = hashlib.sha3_512((key + salt).encode('utf-8')).hexdigest()
         self.alphabet : str = StringProcessor(HEX_CHARS).unrest(unrest_alphabet_seed) # 十六进制的所有排序组合为16!
         self.alphabet_len = len(self.alphabet)
 
