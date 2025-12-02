@@ -120,7 +120,7 @@ class EnigmaMachine:
                 index_deflected : int = (index_alphabet + self.deflects[i]) % self.alphabet_len
                 letter_index : int = rotor.index(self.alphabet[index_deflected])
                 letter = self.alphabet[letter_index]
-            letter = self.character_conversion(letter, self.chars_conversion)
+            letter = self.character_conversion(letter)
             for l in reversed(range(len(self.rotors))):
                 index_alphabet : int = self.alphabet.index(letter)
                 rotor_letter : str = self.rotors[l][index_alphabet]
@@ -140,16 +140,16 @@ class EnigmaMachine:
         for i in range(length_deflect - 1):
             carry : int = turned_deflect[i] // length_alphabet
             turned_deflect[i + 1] += carry
-            turned_deflect[i] %= length_alphabet
-        turned_deflect[length_deflect - 1] %= length_alphabet
+            turned_deflect[i] -= carry * length_alphabet # 优化的取余运算
         return turned_deflect
     
-    @staticmethod
-    def character_conversion(letter : str, parameter : list[str]) -> str:
-        for c in parameter:
+    def character_conversion(self, letter : str) -> str:
+        for c in self.chars_conversion:
             if letter in c:
-                letter_index = c.index(letter)
-                letter = c[(letter_index + 1) % 2]
+                if c.index(letter) == 0: 
+                    letter = c[1]
+                else: 
+                    letter = c[0]
                 break
         return letter
 
