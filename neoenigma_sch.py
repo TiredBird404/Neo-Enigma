@@ -116,16 +116,16 @@ class EnigmaMachine:
         result : str = ""
         for letter in text:
             for i, rotor in enumerate(self.rotors):
-                index_alphabet = self.alphabet.index(letter)
-                index_deflected = (index_alphabet + self.deflects[i]) % self.alphabet_len
-                letter_index = rotor.index(self.alphabet[index_deflected])
+                index_alphabet : int = self.alphabet.index(letter)
+                index_deflected : int = (index_alphabet + self.deflects[i]) % self.alphabet_len
+                letter_index : int = rotor.index(self.alphabet[index_deflected])
                 letter = self.alphabet[letter_index]
             letter = self.character_conversion(letter, self.chars_conversion)
             for l in reversed(range(len(self.rotors))):
-                index_alphabet = self.alphabet.index(letter)
-                rotor_letter = self.rotors[l][index_alphabet]
-                rotor_letter_index = self.alphabet.index(rotor_letter)
-                index_deflected = (rotor_letter_index - self.deflects[l]) % self.alphabet_len
+                index_alphabet : int = self.alphabet.index(letter)
+                rotor_letter : str = self.rotors[l][index_alphabet]
+                rotor_letter_index : int = self.alphabet.index(rotor_letter)
+                index_deflected : int = (rotor_letter_index - self.deflects[l]) % self.alphabet_len
                 letter = self.alphabet[index_deflected]
             self.deflects = self.turn_deflect()
             result += letter
