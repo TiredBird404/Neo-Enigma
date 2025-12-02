@@ -91,17 +91,12 @@ class StringProcessor:
     
     def shuffle(self, seed : str) -> str: # seed应为16进制值
         chars : list[str] = list(self.string)
-        random_hex_numbers : list[str] = self.derive_seed(bytes.fromhex(seed))
-        for f in range(len(chars) - 1, 0, -1): # 使用伪随机数进行打乱，使用Fisher-Yates算法
-            y = int(random_hex_numbers[f],16) % (f + 1)
-            chars[f], chars[y] = chars[y], chars[f]
-        return ''.join(chars)
-
-    def derive_seed(self, seed : bytes) -> list[str]:
-        string_len : int = len(self.string)
-        derived_seed : str = hashlib.shake_256(seed).hexdigest(2 * string_len) # 生成所需的派生长度
+        derived_seed : str = hashlib.shake_256(bytes.fromhex(seed)).hexdigest(2 * len(self.string)) # 生成所需的bytes派生长度
         random_hex_numbers : list[str] = StringProcessor(derived_seed).cut_to_list(4)
-        return random_hex_numbers
+        for i in range(len(chars) - 1, 0, -1): # 使用伪随机数进行打乱，使用Fisher-Yates算法
+            l = int(random_hex_numbers[i],16) % (i + 1)
+            chars[i], chars[l] = chars[l], chars[i]
+        return ''.join(chars)
 
 class EnigmaMachine:
     def __init__(self, text : str, key : str, salt : str) -> None:
