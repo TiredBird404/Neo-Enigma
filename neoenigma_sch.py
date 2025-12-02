@@ -31,7 +31,7 @@ class CryptionMain:
 
     def decryption(self) -> tuple[bool,str]:
         try:
-            self.text = StringProcessor(self.text).hex_only()
+            self.text = StringProcessor(self.text.lower()).hex_only()
             mac = self.text[-self.add_info_length*2:]
             salt = self.text[:self.add_info_length*2]
             encrypted_text : str = self.text[self.add_info_length*2:-self.add_info_length*2]
