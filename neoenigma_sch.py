@@ -19,7 +19,7 @@ class CryptionMain:
     def encryption(self) -> str:
         compressed_text : str = StringProcessor(self.text).compress()
         salt : str = get_random_hex(self.add_info_length)
-        mac : str = self.generate_mac(compressed_text)
+        mac : str = self.generate_mac(compressed_text, salt)
 
         enigma = EnigmaMachine(compressed_text,self.key,salt)
         encrypted_text : str = enigma.encrypte()
@@ -36,7 +36,7 @@ class CryptionMain:
             enigma = EnigmaMachine(encrypted_text,self.key,salt)
             decrypted_text : str = enigma.encrypte()
 
-            check_mac : str = self.generate_mac(decrypted_text)
+            check_mac : str = self.generate_mac(decrypted_text, salt)
             if hmac.compare_digest(check_mac,mac):
                 return True, StringProcessor(decrypted_text).decompress()
             else:
@@ -44,9 +44,9 @@ class CryptionMain:
         except:
             return False, ''
 
-    def generate_mac(self, text : str) -> str: # 生成mac认证
+    def generate_mac(self, text : str, salt : str) -> str: # 生成mac认证
         hmac_result : bytes = hmac.new(
-            key=self.key.encode('utf-8'),
+            key=(self.key + salt).encode('utf-8'),
             msg=text.encode('utf-8'),
             digestmod=hashlib.sha3_512
         ).digest()
