@@ -31,7 +31,7 @@ class CryptionMain:
 
     def decryption(self) -> tuple[bool,str]:
         try:
-            self.text = StringProcessor(self.text.lower()).hex_only()
+            self.text = StringProcessor(self.text).hex_only()
             mac = self.text[-self.add_info_length*2:]
             salt = self.text[:self.add_info_length*2]
             encrypted_text : str = self.text[self.add_info_length*2:-self.add_info_length*2]
@@ -77,7 +77,7 @@ class StringProcessor:
 
     def hex_only(self) -> str: # 清除文本中所有非十六进制的字符
         result : str = ''
-        for c in self.string:
+        for c in self.string.lower():
             if c in HEX_CHARS:
                 result += c
             else: 
