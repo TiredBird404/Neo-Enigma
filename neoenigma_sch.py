@@ -22,7 +22,8 @@ class CryptionMain:
 
         secret_key : bytes = self.generate_hash_secret(salt)
 
-        enigma = EnigmaMachine(compressed_text, secret_key)
+        shuffled_text : str = StringProcessor(compressed_text).intersect()
+        enigma = EnigmaMachine(shuffled_text, secret_key)
         encrypted_text : str = enigma.encrypte()
 
         mac : str = self.generate_mac(encrypted_text, salt, secret_key)
@@ -45,7 +46,9 @@ class CryptionMain:
             enigma = EnigmaMachine(encrypted_text, secret_key)
             decrypted_text : str = enigma.encrypte()
 
-            return True, StringProcessor(decrypted_text).decompress()
+            unshuffled_text : str = StringProcessor(decrypted_text).reverse_intersect()
+
+            return True, StringProcessor(unshuffled_text).decompress()
         except:
             return False, ''
 
@@ -113,6 +116,28 @@ class StringProcessor:
             l = int(random_hex_numbers[i-1],16) % (i + 1)
             chars[i], chars[l] = chars[l], chars[i]
         return ''.join(chars)
+    
+    def intersect(self) -> str: # 将文本交叉。例：abcdef -> acebdf
+        text : str = self.string
+        first : str = ''
+        second : str = ''
+        for i in range(0,len(text),2):
+            first += text[i]
+        for n in range(1,len(text),2):
+            second += text[n]
+        return first + second
+    
+    def reverse_intersect(self) -> str: # 该逆向适用于偶数长度的文本，因为导入的十六进制字符串是bytes长度*2，所以其必然是偶数
+        text : str = self.string
+        half_len : int = len(text) // 2
+        first : str = text[:half_len]
+        second : str = text[half_len:]
+
+        result : str = ''
+        for i in range(half_len):
+            result += first[i]
+            result += second[i]
+        return result
 
 class EnigmaMachine:
     def __init__(self, text : str, key : bytes) -> None:
