@@ -117,7 +117,7 @@ class StringProcessor:
             chars[i], chars[l] = chars[l], chars[i]
         return ''.join(chars)
     
-    def intersect(self) -> str: # 将文本交叉。例：abcdef -> acebdf
+    def intersect(self) -> str: # 将文本交叉。例：abcdef -> bdface
         text : str = self.string
         first : str = ''
         second : str = ''
