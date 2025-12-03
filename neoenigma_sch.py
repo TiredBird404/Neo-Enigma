@@ -121,9 +121,9 @@ class StringProcessor:
         text : str = self.string
         first : str = ''
         second : str = ''
-        for i in range(0,len(text),2):
+        for i in range(1,len(text),2):
             first += text[i]
-        for n in range(1,len(text),2):
+        for n in range(0,len(text),2):
             second += text[n]
         return first + second
     
@@ -135,8 +135,8 @@ class StringProcessor:
 
         result : str = ''
         for i in range(half_len):
-            result += first[i]
             result += second[i]
+            result += first[i]
         return result
 
 class EnigmaMachine:
